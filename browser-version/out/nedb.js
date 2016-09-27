@@ -3360,11 +3360,11 @@ var storage = {
   appendFile (file, data, encoding, cb) {
     this.writeFile(file, data, encoding, cb, true);
   },
-  readFile (file, cb) {
+  readFile (file, encoding, cb) {
     if (typeof file === 'string') {
-      _getFile(file, true, (err, fileObject) => !err ? _readFile(fileObject, 'utf8', cb) : cb(err));
+      _getFile(file, true, (err, fileObject) => !err ? _readFile(fileObject, encoding, cb) : cb(err));
     } else {
-      _readFile(file, 'utf8', cb);
+      _readFile(file, encoding, cb);
     }
   },
   mkdirp (_path, cb) {
