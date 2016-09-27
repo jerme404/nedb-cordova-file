@@ -75,7 +75,6 @@ var storage = {
 };
 
 function _readFile (fileObject, encoding, cb) {
-  console.log(arguments);
   fileObject.file(function (file) {
     var reader = new FileReader();
     reader.onloadend = function () {
