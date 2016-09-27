@@ -3357,8 +3357,8 @@ var storage = {
       _getDir(this._rootFS, _path, false, (err, dir) => dir ? _removeDir(dir, cb) : cb());
     }
   },
-  appendFile (file, data, cb) {
-    this.writeFile(file, data, 'utf8', cb, true);
+  appendFile (file, data, encoding, cb) {
+    this.writeFile(file, data, encoding, cb, true);
   },
   readFile (file, cb) {
     if (typeof file === 'string') {
