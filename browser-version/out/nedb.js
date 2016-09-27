@@ -3343,11 +3343,11 @@ var storage = {
       }
     }
   },
-  writeFile (file, data, cb, isAppend) {
+  writeFile (file, data, encoding, cb, isAppend) {
     if (typeof file === 'string') {
-      _getFile(file, true, (err, fileObject) => fileObject ? _writeFile(fileObject, data, !!isAppend, cb) : cb(err));
+      _getFile(file, true, (err, fileObject) => fileObject ? _writeFile(fileObject, data, encoding, cb, !!isAppend) : cb(err));
     } else {
-      _writeFile(file, data, !!isAppend, cb);
+      _writeFile(file, data, encoding, cb, !!isAppend);
     }
   },
   unlink (path, cb) {
@@ -3358,13 +3358,13 @@ var storage = {
     }
   },
   appendFile (file, data, cb) {
-    this.writeFile(file, data, cb, true);
+    this.writeFile(file, data, 'utf8', cb, true);
   },
   readFile (file, cb) {
     if (typeof file === 'string') {
-      _getFile(file, true, (err, fileObject) => !err ? _readFile(fileObject, cb) : cb(err));
+      _getFile(file, true, (err, fileObject) => !err ? _readFile(fileObject, 'utf8', cb) : cb(err));
     } else {
-      _readFile(file, cb);
+      _readFile(file, 'utf8', cb);
     }
   },
   mkdirp (_path, cb) {
@@ -3386,7 +3386,7 @@ function _readFile (fileObject, encoding, cb) {
   }, cb);
 }
 
-function _writeFile (fileObject, data, isAppend, cb) {
+function _writeFile (fileObject, data, encoding, cb, isAppend) {
   fileObject.createWriter(function (fileWriter) {
     fileWriter.onwriteend = function (res) {
       cb(null, res);
@@ -3394,7 +3394,7 @@ function _writeFile (fileObject, data, isAppend, cb) {
     fileWriter.onerror = cb;
 
     var blob = new Blob([data], { type: 'text/plain' });
-    if (isAppend) {
+    if (isAppend && typeof isAppend === 'boolean') {
       try {
         fileWriter.seek(fileWriter.length);
         fileWriter.write(blob);
