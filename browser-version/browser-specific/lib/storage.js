@@ -74,14 +74,14 @@ var storage = {
   }
 };
 
-function _readFile (fileObject, cb) {
+function _readFile (fileObject, encoding, cb) {
   fileObject.file(function (file) {
     var reader = new FileReader();
     reader.onloadend = function () {
       cb(null, this.result);
     };
     reader.onerror = cb;
-    reader.readAsText(file);
+    reader.readAsText(file, encoding);
   }, cb);
 }
 
