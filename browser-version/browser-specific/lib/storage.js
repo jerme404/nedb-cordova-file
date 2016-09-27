@@ -249,13 +249,13 @@ for (var methodName in storage) {
 
 
 // Interface
-module.exports.exists = _storage.exists;
-module.exports.rename = _storage.rename;
-module.exports.writeFile = _storage.writeFile;
-module.exports.crashSafeWriteFile = _storage.writeFile;   // No need for a crash safe function in the browser
-module.exports.appendFile = _storage.appendFile;
-module.exports.readFile = _storage.readFile;
-module.exports.unlink = _storage.unlink;
-module.exports.mkdirp = _storage.mkdirp;
-module.exports.ensureFileDoesntExist = _storage.ensureFileDoesntExist;
-module.exports.ensureDatafileIntegrity = _storage.ensureDatafileIntegrity;
+module.exports.exists = storage.exists;
+module.exports.rename = storage.rename;
+module.exports.writeFile = storage.writeFile;
+module.exports.crashSafeWriteFile = storage.writeFile;   // No need for a crash safe function in the browser
+module.exports.appendFile = storage.appendFile;
+module.exports.readFile = storage.readFile;
+module.exports.unlink = storage.unlink;
+module.exports.mkdirp = storage.mkdirp;
+module.exports.ensureFileDoesntExist = storage.ensureFileDoesntExist;
+module.exports.ensureDatafileIntegrity = storage.ensureDatafileIntegrity;
