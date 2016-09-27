@@ -3386,7 +3386,7 @@ function _readFile (fileObject, cb) {
   }, cb);
 }
 
-function _writeFile (fileObject, date, isAppend, cb) {
+function _writeFile (fileObject, data, isAppend, cb) {
   fileObject.createWriter(function (fileWriter) {
     fileWriter.onwriteend = function (res) {
       cb(null, res);
