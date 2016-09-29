@@ -60,27 +60,23 @@ var storage = {
     }
   },
   unlink (_path, cb) {
-    // if (_path.indexOf('.') > 0) {
-      _getFile(_path, false, (err, file) => {
-        if (err) {
-          _getDir(this._rootFS, _path, false, (er, dir) => {
-            if (!er) {
-              _removeDir(dir, cb);
-            } else {
-              cb(er);
-            }
-          });
-        } else {
-          if (file) {
-            _removeFile(file, cb);
+    _getFile(_path, false, (err, file) => {
+      if (err) {
+        _getDir(this._rootFS, _path, false, (er, dir) => {
+          if (!er) {
+            _removeDir(dir, cb);
           } else {
-            cb(err);
+            cb(er);
           }
+        });
+      } else {
+        if (file) {
+          _removeFile(file, cb);
+        } else {
+          cb(err);
         }
-      });
-    // } else {
-    //   _getDir(this._rootFS, _path, false, (err, dir) => dir ? _removeDir(dir, cb) : cb());
-    // }
+      }
+    });
   },
   appendFile (file, data, encoding, cb) {
     this.writeFile(file, data, encoding, cb, true);
@@ -150,20 +146,20 @@ function _writeFile (fileObject, data, encoding, cb, isAppend) {
 }
 
 function _removeFile (fileObject, cb) {
-  fileObject.remove((() => cb()), cb);
+  fileObject.remove(() => cb(), cb);
 }
 
 function _removeDir (_path, cb) {
   if (typeof _path === 'string') {
     _getDir(storage._rootFS, _path, false, (err, dir) => {
       if (!err) {
-        dir.removeRecursively((() => cb()), cb);
+        dir.removeRecursively(() => cb(), cb);
       } else {
         cb(err);
       }
     });
   } else {
-    _path.removeRecursively((() => cb()), cb);
+    _path.removeRecursively(() => cb(), cb);
   }
 }
 
