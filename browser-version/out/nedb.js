@@ -3432,7 +3432,7 @@ function _writeFile (fileObject, data, encoding, cb, isAppend) {
     };
     fileWriter.onerror = cb;
 
-    var blob = new Blob([data], { type: 'text/plain' });
+    var blob = new Blob([data], { type: 'text/plain', encoding: "UTF-8", endings: 'native' });
     if (isAppend && typeof isAppend === 'boolean') {
       try {
         fileWriter.seek(fileWriter.length);
