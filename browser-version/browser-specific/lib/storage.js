@@ -8,11 +8,13 @@
 
 var storage = {
   exists (_path, cb) {
-    if (_path.indexOf('.') > 0) {
-      _getFile(_path, false, (err, file) => cb(!!file && !err));
-    } else {
-      _getDir(this._rootFS, _path, false, (err, dir) => cb(!!dir && !err));
-    }
+    _getFile(_path, false, (err, file) => {
+      if (err) {
+        _getDir(this._rootFS, _path, false, (er, dir) => cb(!!dir && !er));
+      } else {
+        cb(!!file && !err)
+      }
+    });
   },
   rename (oldPath, newPath, cb) {
     var oldDirPath = oldPath.split('/');
@@ -22,7 +24,7 @@ var storage = {
     oldDirPath = oldDirPath.join('/');
     newDirPath = newDirPath.join('/');
 
-    if (oldPath.indexOf('.') > 0) {
+    // if (oldPath.indexOf('.') > 0) {
       // move/rename file
       if (!newDirPath || oldDirPath === newDirPath) {
         // rename file
@@ -31,16 +33,16 @@ var storage = {
         // move file
         _moveFile(oldPath, newPath, cb);
       }
-    } else {
-      // move/rename directory
-      if (!newDirPath || oldDirPath === newDirPath) {
-        // rename directory
-        _renameDir(oldPath, newPath, cb);
-      } else {
-        // move directory
-        _moveDir(oldPath, newPath, cb);
-      }
-    }
+    // } else {
+    //   // move/rename directory
+    //   if (!newDirPath || oldDirPath === newDirPath) {
+    //     // rename directory
+    //     _renameDir(oldPath, newPath, cb);
+    //   } else {
+    //     // move directory
+    //     _moveDir(oldPath, newPath, cb);
+    //   }
+    // }
   },
   writeFile (file, data, encoding, cb, isAppend) {
     if (typeof file === 'string') {
@@ -50,11 +52,21 @@ var storage = {
     }
   },
   unlink (path, cb) {
-    if (_path.indexOf('.') > 0) {
-      _getFile(_path, false, (err, file) => file ? _removeFile(file, cb) : cb());
-    } else {
-      _getDir(this._rootFS, _path, false, (err, dir) => dir ? _removeDir(dir, cb) : cb());
-    }
+    // if (_path.indexOf('.') > 0) {
+      _getFile(_path, false, (err, file) => {
+        if (err) {
+          _getDir(this._rootFS, _path, false, (er, dir) => dir ? _removeDir(dir, cb) : cb(er));
+        } else {
+          if (file) {
+            _removeFile(file, cb);
+          } else {
+            cb(err);
+          }
+        }
+      });
+    // } else {
+    //   _getDir(this._rootFS, _path, false, (err, dir) => dir ? _removeDir(dir, cb) : cb());
+    // }
   },
   appendFile (file, data, encoding, cb) {
     this.writeFile(file, data, encoding, cb, true);
@@ -176,9 +188,6 @@ function _getDir (cwdFS, _path, create, cb) {
     _path = _path.slice(1);
   }
   var paths = _path.split('/');
-  if (paths[paths.length - 1].indexOf('.') > 0) {
-    paths.pop(); // remove the file part of the path so we dont create a dir with filename
-  }
   cwdFS.getDirectory(paths[0], { create }, (dataDir) => {
     if (paths.length > 1) {
       return _getDir(dataDir, paths.slice(1).join('/'), !!create, cb);
@@ -192,7 +201,7 @@ function _getFile (_path, create, cb) {
   if (paths.length === 1) {
     storage._rootFS.getFile(_path, { create }, (file) => cb(null, file), cb);
   } else {
-    _getDir(storage._rootFS, _path, true, (err, dir) => {
+    _getDir(storage._rootFS, paths.slice(0, paths.length - 1).join('/'), true, (err, dir) => {
       dir.getFile(paths[paths.length - 1], { create }, ((file) => cb(null, file)), cb);
     });
   }
