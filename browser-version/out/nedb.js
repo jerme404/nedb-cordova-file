@@ -3376,6 +3376,10 @@ var storage = {
 };
 
 function _readFile (fileObject, encoding, cb) {
+  if (typeof encoding === 'function') {
+    cb = encoding;
+    encoding = 'utf8';
+  }
   fileObject.file(function (file) {
     var reader = new FileReader();
     reader.onloadend = function () {
@@ -3387,6 +3391,11 @@ function _readFile (fileObject, encoding, cb) {
 }
 
 function _writeFile (fileObject, data, encoding, cb, isAppend) {
+  if (typeof encoding === 'function') {
+    cb = encoding;
+    encoding = 'utf8';
+    isAppend = cb;
+  }
   fileObject.createWriter(function (fileWriter) {
     fileWriter.onwriteend = function (res) {
       cb(null, res);
