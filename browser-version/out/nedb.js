@@ -3458,13 +3458,13 @@ function _removeDir (_path, cb) {
   if (typeof _path === 'string') {
     _getDir(storage._rootFS, _path, false, (err, dir) => {
       if (!err) {
-        dir.remove((() => cb()), cb);
+        dir.removeRecursively((() => cb()), cb);
       } else {
         cb(err);
       }
     });
   } else {
-    _path.remove((() => cb()), cb);
+    _path.removeRecursively((() => cb()), cb);
   }
 }
 
