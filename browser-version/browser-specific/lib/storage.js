@@ -51,7 +51,7 @@ var storage = {
       _writeFile(file, data, encoding, cb, !!isAppend);
     }
   },
-  unlink (path, cb) {
+  unlink (_path, cb) {
     // if (_path.indexOf('.') > 0) {
       _getFile(_path, false, (err, file) => {
         if (err) {
@@ -193,7 +193,7 @@ function _getDir (cwdFS, _path, create, cb) {
       return _getDir(dataDir, paths.slice(1).join('/'), !!create, cb);
     }
     return cb(null, dataDir);
-    }, cb);
+  }, cb);
 }
 
 function _getFile (_path, create, cb) {
