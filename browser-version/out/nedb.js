@@ -3311,9 +3311,11 @@ var storage = {
   exists (_path, cb) {
     _getFile(_path, false, (err, file) => {
       if (err) {
-        _getDir(this._rootFS, _path, false, (er, dir) => cb(!!dir && !er));
+        _getDir(this._rootFS, _path, false, (er, dir) => {
+          cb(!!dir && !er)
+        });
       } else {
-        cb(!!file && !err)
+        cb(!!file && !err);
       }
     });
   },
@@ -3347,7 +3349,13 @@ var storage = {
   },
   writeFile (file, data, encoding, cb, isAppend) {
     if (typeof file === 'string') {
-      _getFile(file, true, (err, fileObject) => fileObject ? _writeFile(fileObject, data, encoding, cb, !!isAppend) : cb(err));
+      _getFile(file, true, (err, fileObject) => {
+        if (!err) {
+          _writeFile(fileObject, data, encoding, cb, !!isAppend);
+        } else {
+          cb(err);
+        }
+      });
     } else {
       _writeFile(file, data, encoding, cb, !!isAppend);
     }
@@ -3356,7 +3364,13 @@ var storage = {
     // if (_path.indexOf('.') > 0) {
       _getFile(_path, false, (err, file) => {
         if (err) {
-          _getDir(this._rootFS, _path, false, (er, dir) => dir ? _removeDir(dir, cb) : cb(er));
+          _getDir(this._rootFS, _path, false, (er, dir) => {
+            if (!er) {
+              _removeDir(dir, cb);
+            } else {
+              cb(er);
+            }
+          });
         } else {
           if (file) {
             _removeFile(file, cb);
@@ -3374,7 +3388,13 @@ var storage = {
   },
   readFile (file, encoding, cb) {
     if (typeof file === 'string') {
-      _getFile(file, true, (err, fileObject) => !err ? _readFile(fileObject, encoding, cb) : cb(err));
+      _getFile(file, true, (err, fileObject) => {
+        if (!err) {
+          _readFile(fileObject, encoding, cb);
+        } else {
+          cb(err);
+        }
+      });
     } else {
       _readFile(file, encoding, cb);
     }
@@ -3383,7 +3403,9 @@ var storage = {
     _getDir(this._rootFS, _path, true, cb);
   },
   init (rootPath, cb) {
-    window.resolveLocalFileSystemURL(rootPath, (rootFS) => cb(null, (this._rootFS = rootFS)), cb);
+    window.resolveLocalFileSystemURL(rootPath, (rootFS) => {
+      cb(null, (this._rootFS = rootFS));
+    }, cb);
   }
 };
 
@@ -3433,7 +3455,13 @@ function _removeFile (fileObject, cb) {
 }
 
 function _removeDir (_path, cb) {
-  _getDir(storage._rootFS, _path, false, (err, dir) => !err ? dir.remove((() => cb()), cb) : cb(err));
+  _getDir(storage._rootFS, _path, false, (err, dir) => {
+    if (!err) {
+      dir.remove((() => cb()), cb);
+    } else {
+      cb(err);
+    }
+  });
 }
 
 function _renameFile (oldPath, newName, cb) {
@@ -3503,7 +3531,7 @@ function _getFile (_path, create, cb) {
     storage._rootFS.getFile(_path, { create }, (file) => cb(null, file), cb);
   } else {
     _getDir(storage._rootFS, paths.slice(0, paths.length - 1).join('/'), true, (err, dir) => {
-      dir.getFile(paths[paths.length - 1], { create }, ((file) => cb(null, file)), cb);
+      dir.getFile(paths[paths.length - 1], { create }, (file) => cb(null, file), cb);
     });
   }
 }
