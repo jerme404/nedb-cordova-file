@@ -3447,20 +3447,20 @@ function _writeFile (fileObject, data, encoding, cb, isAppend) {
 }
 
 function _removeFile (fileObject, cb) {
-  fileObject.remove(() => cb(), cb);
+  fileObject.remove(() => { cb() }, cb);
 }
 
 function _removeDir (_path, cb) {
   if (typeof _path === 'string') {
     _getDir(storage._rootFS, _path, false, (err, dir) => {
       if (!err) {
-        dir.removeRecursively(() => cb(), cb);
+        dir.removeRecursively(() => { cb() }, cb);
       } else {
         cb(err);
       }
     });
   } else {
-    _path.removeRecursively(() => cb(), cb);
+    _path.removeRecursively(() => { cb() }, cb);
   }
 }
 
