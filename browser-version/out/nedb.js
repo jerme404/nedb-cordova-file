@@ -3391,7 +3391,7 @@ var storage = {
           cb(err);
         }
       });
-    } else {
+    } else if (file.isFile) {
       _readFile(file, encoding, cb);
     }
   },
