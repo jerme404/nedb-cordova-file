@@ -3348,6 +3348,7 @@ var storage = {
     // }
   },
   writeFile (file, data, encoding, cb, isAppend) {
+    if (encoding === 'utf8') encoding = 'UTF-8';
     if (typeof file === 'string') {
       _getFile(file, true, (err, fileObject) => {
         if (!err) {
@@ -3380,9 +3381,11 @@ var storage = {
     });
   },
   appendFile (file, data, encoding, cb) {
+    if (encoding === 'utf8') encoding = 'UTF-8';
     this.writeFile(file, data, encoding, cb, true);
   },
   readFile (file, encoding, cb) {
+    if (encoding === 'utf8') encoding = 'UTF-8';
     if (typeof file === 'string') {
       _getFile(file, true, (err, fileObject) => {
         if (!err) {
@@ -3416,7 +3419,7 @@ function _readFile (fileObject, encoding, cb) {
       cb(null, this.result);
     };
     reader.onerror = cb;
-    reader.readAsText(file, encoding);
+    reader.readAsText(file, encoding || 'UTF-8');
   }, cb);
 }
 
