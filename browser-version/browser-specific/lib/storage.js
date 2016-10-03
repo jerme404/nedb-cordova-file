@@ -110,12 +110,12 @@ var storage = {
 function _readFile (fileObject, encoding, cb) {
   if (typeof encoding === 'function') {
     cb = encoding;
-    encoding = 'utf8';
+    encoding = 'UTF-8';
   }
   fileObject.file(function (file) {
     var reader = new FileReader();
-    reader.onloadend = function () {
-      cb(null, this.result);
+    reader.onloadend = function (e) {
+      cb(null, e.target.result);
     };
     reader.onerror = cb;
     reader.readAsText(file, encoding || 'UTF-8');
@@ -125,12 +125,12 @@ function _readFile (fileObject, encoding, cb) {
 function _writeFile (fileObject, data, encoding, cb, isAppend) {
   if (typeof encoding === 'function') {
     cb = encoding;
-    encoding = 'utf8';
+    encoding = 'UTF-8';
     isAppend = cb;
   }
   fileObject.createWriter(function (fileWriter) {
-    fileWriter.onwriteend = function (res) {
-      cb(null, res);
+    fileWriter.onwriteend = function (e) {
+      cb(e.error);
     };
     fileWriter.onerror = cb;
 
