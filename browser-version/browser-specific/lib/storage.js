@@ -6,106 +6,114 @@
  * This version is the browser version
  */
 
-var storage = {
-  exists (_path, cb) {
-    _getFile(_path, false, (err, file) => {
-      if (err) {
-        _getDir(this._rootFS, _path, false, (er, dir) => {
-          cb(!!dir && !er)
-        });
-      } else {
-        cb(!!file && !err);
-      }
-    });
-  },
-  rename (oldPath, newPath, cb) {
-    var oldDirPath = oldPath.split('/');
-    var newDirPath = newPath.split('/');
-    var oldFilename = oldDirPath.pop();
-    var newFilename = newDirPath.pop();
-    oldDirPath = oldDirPath.join('/');
-    newDirPath = newDirPath.join('/');
+var storage = {};
 
-    // if (oldPath.indexOf('.') > 0) {
-      // move/rename file
-      if (!newDirPath || oldDirPath === newDirPath) {
-        // rename file
-        _renameFile(oldPath, newPath, cb);
-      } else {
-        // move file
-        _moveFile(oldPath, newPath, cb);
-      }
-    // } else {
-    //   // move/rename directory
-    //   if (!newDirPath || oldDirPath === newDirPath) {
-    //     // rename directory
-    //     _renameDir(oldPath, newPath, cb);
-    //   } else {
-    //     // move directory
-    //     _moveDir(oldPath, newPath, cb);
-    //   }
-    // }
-  },
-  writeFile (file, data, encoding, cb, isAppend) {
-    if (encoding === 'utf8') encoding = 'UTF-8';
-    if (typeof file === 'string') {
-      _getFile(file, true, (err, fileObject) => {
-        if (!err) {
-          _writeFile(fileObject, data, encoding, cb, !!isAppend);
-        } else {
-          cb(err);
-        }
-      });
-    } else {
-      _writeFile(file, data, encoding, cb, !!isAppend);
+storage.exists = function exists (_path, cb) {
+  _getFile(_path, false, function (err, file) {
+    if (err) {
+      return _getDir(storage._rootFS, _path, false, function (er, dir) { return cb(!!dir && !er) });
     }
-  },
-  unlink (_path, cb) {
-    _getFile(_path, false, (err, file) => {
-      if (err) {
-        _getDir(this._rootFS, _path, false, (er, dir) => {
-          if (!er) {
-            _removeDir(dir, cb);
-          } else {
-            cb(er);
-          }
-        });
-      } else {
-        if (file) {
-          _removeFile(file, cb);
-        } else {
-          cb(err);
-        }
-      }
-    });
-  },
-  appendFile (file, data, encoding, cb) {
-    if (encoding === 'utf8') encoding = 'UTF-8';
-    this.writeFile(file, data, encoding, cb, true);
-  },
-  readFile (file, encoding, cb) {
-    if (encoding === 'utf8') encoding = 'UTF-8';
-    if (typeof file === 'string') {
-      _getFile(file, true, (err, fileObject) => {
-        if (!err) {
-          _readFile(fileObject, encoding, cb);
-        } else {
-          cb(err);
-        }
-      });
-    } else if (file.isFile) {
-      _readFile(file, encoding, cb);
-    }
-  },
-  mkdirp (_path, cb) {
-    _getDir(this._rootFS, _path, true, cb);
-  },
-  init (rootPath, cb) {
-    window.resolveLocalFileSystemURL(rootPath, (rootFS) => {
-      cb(null, (this._rootFS = rootFS));
-    }, cb);
+    return cb(!!file && !err);
+  });
+}
+
+storage.rename = function rename (oldPath, newPath, cb) {
+  var oldDirPath = oldPath.split('/');
+  var newDirPath = newPath.split('/');
+  var oldFilename = oldDirPath.pop();
+  var newFilename = newDirPath.pop();
+  oldDirPath = oldDirPath.join('/');
+  newDirPath = newDirPath.join('/');
+
+  if (!newDirPath || oldDirPath === newDirPath) {
+    return _renameFile(oldPath, newPath, cb);
   }
+  return _moveFile(oldPath, newPath, cb);
+}
+
+storage.writeFile = function writeFile (file, data, encoding, cb, isAppend) {
+  if (encoding === 'utf8') encoding = 'UTF-8';
+  if (typeof file === 'string') {
+    return _getFile(file, true, function (err, fileObject) {
+      if (err) { return cb(err) }
+      return _writeFile(fileObject, data, encoding, cb, !!isAppend);
+    });
+  }
+  return _writeFile(file, data, encoding, cb, !!isAppend);
+}
+
+storage.unlink = function unlink (_path, cb) {
+  _getFile(_path, false, function (err, file) {
+    if (err) {
+      return _getDir(storage._rootFS, _path, false, function (er, dir) {
+        if (er) { return cb(er) }
+        return _removeDir(dir, cb);
+      });
+    }
+    return _removeFile(file, cb);
+  });
+}
+
+storage.appendFile = function appendFile (file, data, encoding, cb) {
+  if (encoding === 'utf8') encoding = 'UTF-8';
+  return writeFile(file, data, encoding, cb, true);
+}
+
+storage.readFile = function readFile (file, encoding, cb) {
+  if (encoding === 'utf8') encoding = 'UTF-8';
+  if (typeof file === 'string') {
+    _getFile(file, true, function (err, fileObject) {
+      if (err) { return cb(err); }
+      return _readFile(fileObject, encoding, cb);
+    });
+  } else if (file.isFile) {
+    return _readFile(file, encoding, cb);
+  }
+}
+
+storage.mkdirp = function mkdirp (_path, cb) {
+  _getDir(storage._rootFS, _path, true, cb);
+}
+
+storage.ensureFileDoesntExist = function ensureFileDoesntExist(file, callback) {
+  storage.exists(file, function (exists) {
+    if (!exists) { return callback(null); }
+
+    storage.unlink(file, function (err) { return callback(err); });
+  });
 };
+
+
+storage.ensureDatafileIntegrity = function ensureDatafileIntegrity(filename, callback) {
+  var tempFilename = filename + '~';
+
+  storage.exists(filename, function (filenameExists) {
+    // Write was successful
+    if (filenameExists) { return callback(null); }
+
+    storage.exists(tempFilename, function (oldFilenameExists) {
+      // New database
+      if (!oldFilenameExists) {
+        return storage.writeFile(filename, '', function (err) { callback(err); });
+      }
+
+      // Write failed, use old version
+      storage.rename(tempFilename, filename, function (err) { return callback(err); });
+    });
+  });
+};
+
+storage.init = function init (rootPath, cb) {
+  window.resolveLocalFileSystemURL(rootPath, function (rootFS) {
+    cb(null, (storage._rootFS = rootFS));
+  }, cb);
+}
+
+
+
+/**
+ * helpers
+ */
 
 function _readFile (fileObject, encoding, cb) {
   if (typeof encoding === 'function') {
@@ -149,26 +157,20 @@ function _writeFile (fileObject, data, encoding, cb, isAppend) {
 }
 
 function _removeFile (fileObject, cb) {
-  fileObject.remove(() => {
-    cb();
-  }, cb);
+  fileObject.remove(function () { cb() }, cb);
 }
 
 function _removeDir (_path, cb) {
   if (typeof _path === 'string') {
-    _getDir(storage._rootFS, _path, false, (err, dir) => {
+    _getDir(storage._rootFS, _path, false, function (err, dir) {
       if (!err) {
-        dir.removeRecursively(() => {
-          cb();
-        }, cb);
+        dir.removeRecursively(function () { cb() }, cb);
       } else {
         cb(err);
       }
     });
   } else {
-    _path.removeRecursively(() => {
-      cb();
-    }, cb);
+    _path.removeRecursively(function () { cb() }, cb);
   }
 }
 
@@ -176,9 +178,9 @@ function _renameFile (oldPath, newName, cb) {
   var paths = oldPath.split('/');
   var filename = paths.pop();
   var newFilename = newName.split('/').pop();
-  _getDir(storage._rootFS, oldPath, false, (err, dir) => {
+  _getDir(storage._rootFS, oldPath, false, function (err, dir) {
     if (err) return cb(err);
-    dir.getFile(filename, {}, (fileEntry) => {
+    dir.getFile(filename, {}, function (fileEntry) {
       fileEntry.moveTo(dir, newFilename);
       cb(null, newFilename);
     }, cb);
@@ -189,9 +191,9 @@ function _renameDir (oldPath, newName, cb) {
   // var paths = oldPath.split('/');
   // var filename = paths.pop();
   // var newFilename = newName.split('/').pop();
-  // _getDir(storage._rootFS, oldPath, false, (err, dir) => {
+  // _getDir(storage._rootFS, oldPath, false, function (err, dir) {
   //  if (!err) {
-  //    dir.getFile(filename, {}, (fileEntry) => {
+  //    dir.getFile(filename, {}, function (fileEntry) {
   //      fileEntry.moveTo(dir, newFilename);
   //      cb(null, newFilename);
   //    });
@@ -206,9 +208,9 @@ function _moveFile (oldPath, newName, cb) {
   var filename = paths.pop();
   var newPaths = newName.split('/');
   var newFilename = newPaths.pop();
-  _getDir(storage._rootFS, newName, true, (err, newDir) => {
+  _getDir(storage._rootFS, newName, true, function (err, newDir) {
     if (err) return cb(err);
-    _getFile(oldPath, false, (er, fileEntry) => {
+    _getFile(oldPath, false, function (er, fileEntry) {
       if (er) return cb(er);
       fileEntry.moveTo(newDir, newFilename);
       cb(null, newName);
@@ -225,7 +227,7 @@ function _getDir (cwdFS, _path, create, cb) {
     _path = _path.slice(1);
   }
   var paths = _path.split('/');
-  cwdFS.getDirectory(paths[0], { create }, (dataDir) => {
+  cwdFS.getDirectory(paths[0], { create: create }, function (dataDir) {
     if (paths.length > 1) {
       return _getDir(dataDir, paths.slice(1).join('/'), !!create, cb);
     }
@@ -236,10 +238,10 @@ function _getDir (cwdFS, _path, create, cb) {
 function _getFile (_path, create, cb) {
   var paths = _path.split('/');
   if (paths.length === 1) {
-    storage._rootFS.getFile(_path, { create }, (file) => cb(null, file), cb);
+    storage._rootFS.getFile(_path, { create: create }, function (file) { cb(null, file) }, cb);
   } else {
-    _getDir(storage._rootFS, paths.slice(0, paths.length - 1).join('/'), true, (err, dir) => {
-      dir.getFile(paths[paths.length - 1], { create }, (file) => cb(null, file), cb);
+    _getDir(storage._rootFS, paths.slice(0, paths.length - 1).join('/'), true, function (err, dir) {
+      dir.getFile(paths[paths.length - 1], { create: create }, function (file) { cb(null, file) }, cb);
     });
   }
 }
@@ -258,33 +260,6 @@ function _ensureInit(cb) {
   }
 }
 
-storage.ensureFileDoesntExist = function (file, callback) {
-  storage.exists(file, function (exists) {
-    if (!exists) { return callback(null); }
-
-    storage.unlink(file, function (err) { return callback(err); });
-  });
-};
-
-
-storage.ensureDatafileIntegrity = function (filename, callback) {
-  var tempFilename = filename + '~';
-
-  storage.exists(filename, function (filenameExists) {
-    // Write was successful
-    if (filenameExists) { return callback(null); }
-
-    storage.exists(tempFilename, function (oldFilenameExists) {
-      // New database
-      if (!oldFilenameExists) {
-        return storage.writeFile(filename, '', function (err) { callback(err); });
-      }
-
-      // Write failed, use old version
-      storage.rename(tempFilename, filename, function (err) { return callback(err); });
-    });
-  });
-};
 
 // wrap methods with `_ensureInit` for convenience
 for (var methodName in storage) {
@@ -293,9 +268,7 @@ for (var methodName in storage) {
       var originalFn = storage[methodName];
       var wrappedFn = function () {
         var args = Array.prototype.slice.call(arguments);
-        _ensureInit(() => {
-          originalFn.apply(this, args)
-        });
+        _ensureInit(function () { originalFn.apply(this, args) });
       };
       storage[methodName] = wrappedFn.bind(storage);
     })(methodName);
@@ -304,13 +277,5 @@ for (var methodName in storage) {
 
 
 // Interface
-module.exports.exists = storage.exists;
-module.exports.rename = storage.rename;
-module.exports.writeFile = storage.writeFile;
+module.exports = storage;
 module.exports.crashSafeWriteFile = storage.writeFile;   // No need for a crash safe function in the browser
-module.exports.appendFile = storage.appendFile;
-module.exports.readFile = storage.readFile;
-module.exports.unlink = storage.unlink;
-module.exports.mkdirp = storage.mkdirp;
-module.exports.ensureFileDoesntExist = storage.ensureFileDoesntExist;
-module.exports.ensureDatafileIntegrity = storage.ensureDatafileIntegrity;
