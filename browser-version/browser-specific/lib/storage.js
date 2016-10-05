@@ -56,7 +56,7 @@ storage.unlink = function unlink (_path, cb) {
 
 storage.appendFile = function appendFile (file, data, encoding, cb) {
   if (encoding === 'utf8') encoding = 'UTF-8';
-  return writeFile(file, data, encoding, cb, true);
+  return storage.writeFile(file, data, encoding, cb, true);
 }
 
 storage.readFile = function readFile (file, encoding, cb) {
