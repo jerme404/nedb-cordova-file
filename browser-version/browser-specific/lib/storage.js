@@ -6,9 +6,46 @@
  * This version is the browser version
  */
 
+
 var storage = {};
 
-storage.exists = function exists (_path, cb) {
+var isBrowser = typeof cordova == 'undefined';
+
+console.log('isBrowser:', isBrowser);
+
+storage.exists = isBrowser ? existsBrowser : existsNative;
+storage.rename = isBrowser ? renameBrowser : renameNative;
+storage.writeFile = isBrowser ? writeFileBrowser : writeFileNative;
+storage.unlink = isBrowser ? unlinkBrowser : unlinkNative;
+storage.appendFile = isBrowser ? appendFileBrowser : appendFileNative;
+storage.readFile = isBrowser ? readFileBrowser : readFileNative;
+storage.mkdirp = isBrowser ? mkdirpBrowser : mkdirpNative;
+storage.ensureFileDoesntExist = isBrowser ? ensureFileDoesntExistBrowser : ensureFileDoesntExistNative;
+storage.ensureDatafileIntegrity = isBrowser ? ensureDatafileIntegrityBrowser : ensureDatafileIntegrityNative;
+storage.crashSafeWriteFile = storage.writeFile;   // No need for a crash safe function in the browser
+
+storage.init = function init (rootPath, cb) {
+  if (isBrowser) {
+    var localforage = require('localforage');
+    // Configure localforage to display NeDB name for now. Would be a good idea to let user use his own app name
+    localforage.config({
+      name: 'NeDB',
+      storeName: 'nedbdata'
+    });
+  } else {
+    window.resolveLocalFileSystemURL(rootPath, function (rootFS) {
+      cb(null, (storage._rootFS = rootFS));
+    }, cb);
+  }
+};
+
+
+
+/**
+ * Functions (Native)
+ */
+
+function existsNative (_path, cb) {
   _getFile(_path, false, function (err, file) {
     if (err) {
       return _getDir(storage._rootFS, _path, false, function (er, dir) { return cb(!!dir && !er) });
@@ -17,7 +54,7 @@ storage.exists = function exists (_path, cb) {
   });
 }
 
-storage.rename = function rename (oldPath, newPath, cb) {
+function renameNative (oldPath, newPath, cb) {
   var oldDirPath = oldPath.split('/');
   var newDirPath = newPath.split('/');
   var oldFilename = oldDirPath.pop();
@@ -31,7 +68,7 @@ storage.rename = function rename (oldPath, newPath, cb) {
   return _moveFile(oldPath, newPath, cb);
 }
 
-storage.writeFile = function writeFile (file, data, encoding, cb, isAppend) {
+function writeFileNative (file, data, encoding, cb, isAppend) {
   if (encoding === 'utf8') encoding = 'UTF-8';
   if (typeof file === 'string') {
     return _getFile(file, true, function (err, fileObject) {
@@ -42,7 +79,7 @@ storage.writeFile = function writeFile (file, data, encoding, cb, isAppend) {
   return _writeFile(file, data, encoding, cb, !!isAppend);
 }
 
-storage.unlink = function unlink (_path, cb) {
+function unlinkNative (_path, cb) {
   _getFile(_path, false, function (err, file) {
     if (err) {
       return _getDir(storage._rootFS, _path, false, function (er, dir) {
@@ -54,12 +91,12 @@ storage.unlink = function unlink (_path, cb) {
   });
 }
 
-storage.appendFile = function appendFile (file, data, encoding, cb) {
+function appendFileNative (file, data, encoding, cb) {
   if (encoding === 'utf8') encoding = 'UTF-8';
-  return storage.writeFile(file, data, encoding, cb, true);
+  return storage.writeFileNative(file, data, encoding, cb, true);
 }
 
-storage.readFile = function readFile (file, encoding, cb) {
+function readFileNative (file, encoding, cb) {
   if (encoding === 'utf8') encoding = 'UTF-8';
   if (typeof file === 'string') {
     _getFile(file, true, function (err, fileObject) {
@@ -71,45 +108,106 @@ storage.readFile = function readFile (file, encoding, cb) {
   }
 }
 
-storage.mkdirp = function mkdirp (_path, cb) {
+function mkdirpNative (_path, cb) {
   _getDir(storage._rootFS, _path, true, cb);
 }
 
-storage.ensureFileDoesntExist = function ensureFileDoesntExist(file, callback) {
-  storage.exists(file, function (exists) {
+function ensureFileDoesntExistNative(file, callback) {
+  storage.existsNative(file, function (exists) {
     if (!exists) { return callback(null); }
 
-    storage.unlink(file, function (err) { return callback(err); });
+    storage.unlinkNative(file, function (err) { return callback(err); });
   });
-};
+}
 
-
-storage.ensureDatafileIntegrity = function ensureDatafileIntegrity(filename, callback) {
+function ensureDatafileIntegrityNative(filename, callback) {
   var tempFilename = filename + '~';
 
-  storage.exists(filename, function (filenameExists) {
+  storage.existsNative(filename, function (filenameExists) {
     // Write was successful
     if (filenameExists) { return callback(null); }
 
-    storage.exists(tempFilename, function (oldFilenameExists) {
+    storage.existsNative(tempFilename, function (oldFilenameExists) {
       // New database
       if (!oldFilenameExists) {
-        return storage.writeFile(filename, '', function (err) { callback(err); });
+        return storage.writeFileNative(filename, '', function (err) { callback(err); });
       }
 
       // Write failed, use old version
-      storage.rename(tempFilename, filename, function (err) { return callback(err); });
+      storage.renameNative(tempFilename, filename, function (err) { return callback(err); });
     });
   });
-};
-
-storage.init = function init (rootPath, cb) {
-  window.resolveLocalFileSystemURL(rootPath, function (rootFS) {
-    cb(null, (storage._rootFS = rootFS));
-  }, cb);
 }
 
 
+/**
+ * Function (Browser)
+ */
+function existsBrowser (filename, callback) {
+  localforage.getItem(filename, function (err, value) {
+    if (value !== null) {   // Even if value is undefined, localforage returns null
+      return callback(true);
+    } else {
+      return callback(false);
+    }
+  });
+}
+
+
+function renameBrowser (filename, newFilename, callback) {
+  localforage.getItem(filename, function (err, value) {
+    if (value === null) {
+      localforage.removeItem(newFilename, function () { return callback(); });
+    } else {
+      localforage.setItem(newFilename, value, function () {
+        localforage.removeItem(filename, function () { return callback(); });
+      });
+    }
+  });
+}
+
+
+function writeFileBrowser (filename, contents, options, callback) {
+  // Options do not matter in browser setup
+  if (typeof options === 'function') { callback = options; }
+  localforage.setItem(filename, contents, function () { return callback(); });
+}
+
+
+function appendFileBrowser (filename, toAppend, options, callback) {
+  // Options do not matter in browser setup
+  if (typeof options === 'function') { callback = options; }
+
+  localforage.getItem(filename, function (err, contents) {
+    contents = contents || '';
+    contents += toAppend;
+    localforage.setItem(filename, contents, function () { return callback(); });
+  });
+}
+
+
+function readFileBrowser (filename, options, callback) {
+  // Options do not matter in browser setup
+  if (typeof options === 'function') { callback = options; }
+  localforage.getItem(filename, function (err, contents) { return callback(null, contents || ''); });
+}
+
+
+function unlinkBrowser (filename, callback) {
+  localforage.removeItem(filename, function () { return callback(); });
+}
+
+
+// Nothing to do, no directories will be used on the browser
+function mkdirpBrowser (dir, callback) {
+  return callback();
+}
+
+
+// Nothing to do, no data corruption possible in the brower
+function ensureDatafileIntegrityBrowser (filename, callback) {
+  return callback(null);
+}
 
 /**
  * helpers
@@ -248,9 +346,8 @@ function _getFile (_path, create, cb) {
 
 function _ensureInit(cb) {
   if (!storage._rootFS) {
-    console.warn('Storage not initialized. Call `storage.init(rootFsUrl, callback)`.');
     if (typeof cordova !== 'undefined' && cordova.file) {
-      console.warn('Using `cordova.file.dataDirectory` until `storage.init` called with new root directory.');
+      console.warn('Using file system located at `cordova.file.dataDirectory`.');
       storage.init.apply(storage, [cordova.file.dataDirectory, cb]);
     } else {
       throw 'Storage not initialized. Call `storage.init(rootFsUrl, callback)`.';
@@ -278,4 +375,3 @@ for (var methodName in storage) {
 
 // Interface
 module.exports = storage;
-module.exports.crashSafeWriteFile = storage.writeFile;   // No need for a crash safe function in the browser
