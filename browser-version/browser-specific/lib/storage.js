@@ -11,7 +11,7 @@ var storage = {};
 
 var isBrowser = typeof cordova == 'undefined';
 
-console.log('isBrowser:', isBrowser);
+console.log('Nedb using:', isBrowser ? 'localforage' : 'cordova-file');
 
 storage.exists = isBrowser ? existsBrowser : existsNative;
 storage.rename = isBrowser ? renameBrowser : renameNative;
@@ -368,16 +368,18 @@ function _ensureInit(cb) {
 
 
 // wrap methods with `_ensureInit` for convenience
-for (var methodName in storage) {
-  if (storage.hasOwnProperty(methodName) && methodName !== 'init') {
-    (function (methodName) {
-      var originalFn = storage[methodName];
-      var wrappedFn = function () {
-        var args = Array.prototype.slice.call(arguments);
-        _ensureInit(function () { originalFn.apply(this, args) });
-      };
-      storage[methodName] = wrappedFn.bind(storage);
-    })(methodName);
+if (!isBrowser) {
+  for (var methodName in storage) {
+    if (storage.hasOwnProperty(methodName) && methodName !== 'init') {
+      (function (methodName) {
+        var originalFn = storage[methodName];
+        var wrappedFn = function () {
+          var args = Array.prototype.slice.call(arguments);
+          _ensureInit(function () { originalFn.apply(this, args) });
+        };
+        storage[methodName] = wrappedFn.bind(storage);
+      })(methodName);
+    }
   }
 }
 
