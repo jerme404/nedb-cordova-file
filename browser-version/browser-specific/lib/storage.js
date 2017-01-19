@@ -204,6 +204,15 @@ function mkdirpBrowser (dir, callback) {
 }
 
 
+function ensureFileDoesntExistBrowser(file, callback) {
+  storage.existsBrowser(file, function (exists) {
+    if (!exists) { return callback(null); }
+
+    storage.unlinkBrowser(file, function (err) { return callback(err); });
+  });
+}
+
+
 // Nothing to do, no data corruption possible in the brower
 function ensureDatafileIntegrityBrowser (filename, callback) {
   return callback(null);
