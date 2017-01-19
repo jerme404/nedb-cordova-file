@@ -10,6 +10,16 @@
 var storage = {};
 
 var isBrowser = typeof cordova == 'undefined';
+var localforage;
+
+if (isBrowser) {
+  var localforage = require('localforage');
+  // Configure localforage to display NeDB name for now. Would be a good idea to let user use his own app name
+  localforage.config({
+    name: 'NeDB',
+    storeName: 'nedbdata'
+  });
+}
 
 console.log('Nedb using:', isBrowser ? 'localforage' : 'cordova-file');
 
@@ -25,18 +35,9 @@ storage.ensureDatafileIntegrity = isBrowser ? ensureDatafileIntegrityBrowser : e
 storage.crashSafeWriteFile = storage.writeFile;   // No need for a crash safe function in the browser
 
 storage.init = function init (rootPath, cb) {
-  if (isBrowser) {
-    var localforage = require('localforage');
-    // Configure localforage to display NeDB name for now. Would be a good idea to let user use his own app name
-    localforage.config({
-      name: 'NeDB',
-      storeName: 'nedbdata'
-    });
-  } else {
-    window.resolveLocalFileSystemURL(rootPath, function (rootFS) {
-      cb(null, (storage._rootFS = rootFS));
-    }, cb);
-  }
+  window.resolveLocalFileSystemURL(rootPath, function (rootFS) {
+    cb(null, (storage._rootFS = rootFS));
+  }, cb);
 };
 
 
