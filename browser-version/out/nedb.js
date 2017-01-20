@@ -3395,7 +3395,7 @@ function unlinkNative (_path, cb) {
 
 function appendFileNative (file, data, encoding, cb) {
   if (encoding === 'utf8') encoding = 'UTF-8';
-  return storage.writeFileNative(file, data, encoding, cb, true);
+  return writeFileNative(file, data, encoding, cb, true);
 }
 
 function readFileNative (file, encoding, cb) {
@@ -3415,28 +3415,28 @@ function mkdirpNative (_path, cb) {
 }
 
 function ensureFileDoesntExistNative(file, callback) {
-  storage.existsNative(file, function (exists) {
+  existsNative(file, function (exists) {
     if (!exists) { return callback(null); }
 
-    storage.unlinkNative(file, function (err) { return callback(err); });
+    unlinkNative(file, function (err) { return callback(err); });
   });
 }
 
 function ensureDatafileIntegrityNative(filename, callback) {
   var tempFilename = filename + '~';
 
-  storage.existsNative(filename, function (filenameExists) {
+  existsNative(filename, function (filenameExists) {
     // Write was successful
     if (filenameExists) { return callback(null); }
 
-    storage.existsNative(tempFilename, function (oldFilenameExists) {
+    existsNative(tempFilename, function (oldFilenameExists) {
       // New database
       if (!oldFilenameExists) {
-        return storage.writeFileNative(filename, '', function (err) { callback(err); });
+        return writeFileNative(filename, '', function (err) { callback(err); });
       }
 
       // Write failed, use old version
-      storage.renameNative(tempFilename, filename, function (err) { return callback(err); });
+      renameNative(tempFilename, filename, function (err) { return callback(err); });
     });
   });
 }
