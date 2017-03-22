@@ -3310,7 +3310,7 @@ module.exports = Persistence;
 
 var storage = {};
 
-var isBrowser = typeof cordova == 'undefined' || (typeof ionic !== 'undefined' && ionic.Platform.version() < 9);
+var isBrowser = typeof cordova == 'undefined';
 var localforage;
 
 if (isBrowser) {
