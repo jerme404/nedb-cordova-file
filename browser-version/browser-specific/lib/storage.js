@@ -9,7 +9,7 @@
 
 var storage = {};
 
-var isBrowser = typeof cordova == 'undefined';
+var isBrowser = typeof cordova == 'undefined' || (typeof ionic !== 'undefined' && ionic.Platform.version() < 9);
 var localforage;
 
 if (isBrowser) {
